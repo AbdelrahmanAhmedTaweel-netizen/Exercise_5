@@ -17,9 +17,7 @@ body{
  i{
     color: #A97F40;
 }
-#Register form button:hover{
-    background-color: #157347 !important;
-}
+
 #Register form .box{
     width: 450px;
     margin: auto;
@@ -31,4 +29,17 @@ body{
 table.table{
     width: max-content;
     min-width: 100%;
+}
+.btn-purple{
+    background-color: #6f42c1;
+    color: #fff;
+}
+.btn-purple{
+    background-color: #6f42c1;
+    color: #fff;
+}
+
+.btn-purple:hover{
+    background-color: #6f42c1;
+    color: #fff;
 }

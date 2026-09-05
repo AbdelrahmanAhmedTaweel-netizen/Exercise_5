@@ -74,29 +74,43 @@ function showStudent (student){
 
 function checkInput(input){
    let inputName = input.name,
-       inputValue = input.value,
+       inputValue = input.value.trim(),
         isEmpty = inputValue === "",
         errorElement = document.querySelector(`p.alert[data-error-name="${inputName}"]`);
         isInvalid= !regexInputs[inputName].test(inputValue),
+        isDuplicated = !isEmpty && !isInvalid && isDuplicate(inputName, inputValue),
         errorMsg = "";
-        
+
+    input.value = inputValue;
+
     if(isEmpty){
         errorMsg = "This field is requierd.";
     } else if(isInvalid){
         errorMsg = "Invalid Field"
+    } else if(isDuplicated){
+        errorMsg = "This value already exists";
     }
     
     
-if(isEmpty || isInvalid){
+if(isEmpty || isInvalid || isDuplicated){
         input.classList.add("is-invalid");
         errorElement.textContent = errorMsg;
         errorElement.classList.remove("d-none");
         input.classList.remove("is-valid");
 } else {
         input.classList.add("is-valid");
-        input.classList.remove("is-Invalid");
+        input.classList.remove("is-invalid");
         errorElement.classList.add('d-none');
     }
+}
+
+function isDuplicate(inputName, inputValue){
+    let currentStudentId = registerForm.dataset.studentId;
+
+    return students.some(function(student){
+        let isSameStudent = currentStudentId != null && student.id == currentStudentId;
+        return !isSameStudent && student[inputName] == inputValue;
+    });
 }
 
 function resetForm (){
@@ -134,17 +148,20 @@ function getStudentIndex(id){
 }
 
 
-function deleteStudent(id, that){
+function deleteStudent(studentId, that){
     if(!confirm("Are you sure")){
         return;
     }
 
-    let studentIndex = getStudentIndex(id)
+    let studentIndex = getStudentIndex(studentId)
     let trEle = that.closest("tr");
     students.splice(studentIndex , 1);
         trEle.remove();
         updateLocalStorage();
 
+    if(students.length == 0){
+        id = 0;
+    }
 
     noData(students);
 }
@@ -160,6 +177,13 @@ function noData(data){
 
 function insertStudent(id){
 
+    let previousType = registerForm.getAttribute("data-type"),
+        previousId = registerForm.dataset.studentId;
+
+    if(previousType == "edit" && previousId != null && previousId != id){
+        setRowEditMode(previousId, false);
+    }
+
     resetForm();
 
     let editStudent = students.find(function(student){
@@ -173,8 +197,10 @@ function insertStudent(id){
     myBtn.textContent="Edit";
     myBtn.classList.add("btn-info" , "text-light");
     myBtn.classList.remove("btn-success")
-    registerForm.setAttribute("data-type" , "edit")
-    registerForm.setAttribute("data-student-id" , id)
+    registerForm.setAttribute("data-type" , "edit");
+    registerForm.setAttribute("data-student-id" , id);
+
+    setRowEditMode(id, true);
 }
 
 function editStudent(){
@@ -202,7 +228,45 @@ function editStudent(){
     resetForm();
 }
 
+function setRowEditMode(id, isEditing){
+    let trEle = tableBody.querySelector(`tr[data-student-id="${id}"]`);
+    if(trEle == null){
+        return;
+    }
+
+    let editBtn = trEle.querySelector(".btn-info, .btn-purple"),
+        deleteBtn = trEle.querySelector(".btn-danger");
+
+    if(isEditing){
+        editBtn.textContent = "Undo";
+        editBtn.classList.remove("btn-info");
+        editBtn.classList.add("btn-purple");
+        editBtn.setAttribute("onclick", `cancelEdit(${id})`);
+        deleteBtn.disabled = true;
+    } else {
+        editBtn.textContent = "Edit";
+        editBtn.classList.remove("btn-purple");
+        editBtn.classList.add("btn-info");
+        editBtn.setAttribute("onclick", `insertStudent(${id})`);
+        deleteBtn.disabled = false;
+    }
+}
+
+
+
+function cancelEdit(id){
+    setRowEditMode(id, false);
+    resetForm();
+
+    let myBtn = registerForm.querySelector("button");
+    myBtn.textContent = "Add";
+    myBtn.classList.remove("btn-info", "text-light");
+    myBtn.classList.add("btn-success", "text-light");
+}
+
+
 function search(searchValue) {
+     searchValue = searchValue.trim();
   let filteredStudents = students.filter(function (student) {
     return student.firstName.toLowerCase().includes(searchValue.toLowerCase()) ||
       student.lastName.toLowerCase().includes(searchValue.toLowerCase()) ||
